@@ -1,85 +1,118 @@
 # GPT-2 Activation Patching: Two Exploratory Experiments
 
-**Status:** Completed exploratory methodological demonstrations (single prompt pair); **not** a validated circuit discovery or a sociolinguistic-register experiment.
+**Status:** Completed exploratory demonstrations of mechanistic interpretability methods.
 
 ## Overview
 
-This project uses GPT-2 Small, Python, PyTorch, and TransformerLens to test how replacing residual-stream activations affects next-token predictions. Two experiments compare interventions at the country-name token and the final prompt token across transformer layers. The goal is to establish a reproducible methodological foundation for future investigations into sociolinguistic register, robustness, and generalization.
+This project investigates how interventions on internal activations in GPT-2 affect next-token predictions.
 
-## Research question
+Using Python, PyTorch, and TransformerLens, I compare activation patching at different token positions and transformer layers.
 
-**How does the token position and transformer layer of a residual-stream intervention affect the model's next-token prediction?**
+The longer-term objective is to apply these methods to research on sociolinguistic register, model robustness, and generalization.
 
-## Experimental setup
+## Research Question
 
-- **Clean prompt:** `The capital of France is`
-- **Corrupted prompt:** `The capital of Italy is`
-- **Continuations compared:** ` Paris` versus ` Rome`
-- **Intervention:** Replace the residual-stream activation at one specified layer and token position with the corresponding vector from the other prompt (`blocks.{layer}.hook_resid_post`).
-- **Outcome:** Paris-minus-Rome logit difference; normalized bidirectional rescue/damage scores.
-- **Control:** Patch an unchanged prefix position. Because the prefix activations are identical, this is a basic implementation check rather than a strong negative control.
+How does the position and transformer layer of an activation intervention affect a language model's next-token predictions?
 
-### Baseline logit differences
+## Experimental Setup
 
-| Measurement | Logit difference | Interpretation |
+**Clean prompt:** The capital of France is
+
+**Corrupted prompt:** The capital of Italy is
+
+**Compared predictions:** Paris versus Rome
+
+**Method:** Residual-stream activation patching across GPT-2 transformer layers.
+
+### Baseline Logit Differences
+
+| Measurement | Logit Difference | Interpretation |
 |---|---:|---|
 | Clean prompt (France) | +1.405 | Prefers Paris over Rome |
-| Corrupted prompt (Italy) | −4.417 | Prefers Rome over Paris |
-| Behavioral separation | +5.822 | Exceeds the notebook's 0.5 exploratory threshold |
+| Corrupted prompt (Italy) | -4.417 | Prefers Rome over Paris |
+| Behavioral separation | +5.822 | Passes the initial exploratory threshold |
 
-The separation is an effect-size measure for this example, **not** a statistical significance test.
+The behavioral separation exceeds the notebook's threshold of 0.5. This is not a statistical significance test.
 
-## Experiment 1: Country-token patching
+## Experiment 1: Country-Token Activation Patching
 
-The source activation is inserted at the position of `France` / `Italy`, separately at each layer. Rescue and reverse-damage effects are near 1 through layers 0–7, decline at later layers, and reach 0 at layer 11. The unchanged-prefix control is 0 throughout.
+The first experiment replaces internal activations at the token distinguishing France from Italy.
 
-![Experiment 1 — country-token activation patching](results/patching_results.png)
+### Results
 
-[View Experiment 1 numerical results](results/patching_results.csv).
+- Layers 0–7: Approximately complete normalized recovery.
+- Layers 8–10: Progressively weaker recovery.
+- Layer 11: Zero recovery.
+- Unchanged-prefix control: Zero throughout.
 
-## Experiment 2: Final-token patching
+![Experiment 1 Results](results/patching_results.png)
 
-The intervention is repeated at the final prompt position (`is`). Recovery is small at early layers, approximately 0.699 at layer 9, 0.852 at layer 10, and 1.000 at layer 11. Reverse-direction effects are similar; the unchanged-prefix control is again 0.
+[View Experiment 1 numerical results](results/patching_results.csv)
 
-![Experiment 2 — final-token activation patching](results_final_position/patching_results.png)
+## Experiment 2: Final-Token Activation Patching
 
-[View Experiment 2 numerical results](results_final_position/patching_results.csv).
+The second experiment patches the final prompt-token position instead of the country-token position.
+
+### Results
+
+- Early layers: Very small intervention effects.
+- Layer 9: Approximately 69.9% recovery.
+- Layer 10: Approximately 85.2% recovery.
+- Layer 11: Full normalized recovery.
+- Unchanged-prefix control: Zero throughout.
+
+![Experiment 2 Results](results_final_position/patching_results.png)
+
+[View Experiment 2 numerical results](results_final_position/patching_results.csv)
 
 ## Interpretation
 
-The contrasting layer profiles are consistent with GPT-2's causal attention structure. Information at an earlier country-token position can affect the final prediction through downstream attention; the residual activation at the final position directly feeds the next-token readout.
+The experiments demonstrate that activation-patching effects depend on both the transformer layer and the token position.
 
-**Important:** Full recovery after patching the *entire final-layer residual vector at the final prompt position* is expected from the intervention design. It does **not** identify a specific neuron, head, feature, or circuit. Likewise, a zero effect from patching an unchanged prefix is not a demanding negative control.
+The contrasting results are consistent with the causal attention structure of GPT-2.
 
-## Repository contents
+Patching the complete final-position activation at the final layer produces full recovery by design. This does not establish the discovery of a particular neuron, feature, or circuit.
 
-```text
-01_activation_patching.ipynb
-results/
-  patching_results.csv
-  patching_results.png
-results_final_position/
-  patching_results.csv
-  patching_results.png
-README.md
-```
+## Limitations
 
-## Reproduce
+These are exploratory experiments using one prompt pair.
 
-1. Download or open [`01_activation_patching.ipynb`](01_activation_patching.ipynb) in Google Colab.
-2. Select a Python 3 runtime (T4 GPU recommended when available).
-3. Run all cells from the top. The notebook installs the Python packages and downloads the public GPT-2 model; a private Hugging Face token is not normally required.
-4. Compare the printed baseline scores, CSV results, and graphs in the two results folders. Values can vary slightly across software environments.
+They do not establish a unique internal mechanism or demonstrate sociolinguistic register representations.
 
-## Limitations and next steps
+Further research requires additional prompt pairs, stronger negative controls, replication, and more localized interventions.
 
-These demonstrations use **one** prompt pair, lack confidence intervals across independently sampled pairs, and do not establish robustness beyond this example. The interventions replace full residual-stream vectors rather than isolating attention heads or model features.
+## Reproducibility
 
-Planned next steps include preregistered additional prompt pairs, stronger negative controls, attention-head-level interventions, and a separate exploratory mechanistic follow-up to [Register Feature Family](https://github.com/Rinetta1981/register-feature-family). The prior register experiment's failed out-of-distribution generalization gate should remain documented; no generalizable register mechanism is claimed on its basis.
+The repository contains:
 
-## Tools
+- A Jupyter notebook with both experiments.
+- CSV files with quantitative results.
+- Graphs illustrating activation-patching effects.
 
-- Python / PyTorch
+To reproduce the experiments:
+
+1. Open the notebook in Google Colab.
+2. Select Python 3 and preferably a T4 GPU.
+3. Run the notebook cells in order.
+4. Compare the results and visualizations.
+
+The notebook has not yet been independently validated through a complete fresh runtime execution.
+
+## Future Research
+
+The next phase will apply causal intervention methods to my existing research project:
+
+[Register Feature Family](https://github.com/Rinetta1981/register-feature-family)
+
+The proposed research investigates which internal computations contribute to failures of generalization across linguistic-register combinations.
+
+This will be a separate exploratory study; the existing project's failed out-of-distribution validity test remains part of the scientific record.
+
+## Technologies
+
+- Python
+- PyTorch
 - TransformerLens
+- GPT-2
 - Google Colab
-- pandas / Matplotlib
+- pandas and Matplotlib
